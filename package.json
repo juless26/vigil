@@ -1,0 +1,12 @@
+{
+  "name": "vigil-code-connect",
+  "private": true,
+  "description": "Code Connect templates that link the Vigil Figma library to the VigilDesignSystem Swift package.",
+  "scripts": {
+    "connect:publish": "figma connect publish",
+    "connect:unpublish": "figma connect unpublish"
+  },
+  "devDependencies": {
+    "@figma/code-connect": "^1.3.0"
+  }
+}
