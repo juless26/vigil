@@ -79,6 +79,11 @@ public enum VigilToken {
         public static let placeholder = C.textTertiary
     }
 
+    public enum Choice {
+        public static let label = C.textPrimary
+        public static let check = C.actionPrimary
+    }
+
     public enum Progress {
         public static let track = C.surfaceControl
         public static let fill = C.statusHolding
