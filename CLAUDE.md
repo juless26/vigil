@@ -8,6 +8,17 @@ Vigil is for mothers recovering from opioid use disorder and the NICU nurses who
 - If a screen needs something that is not there, add the component to Figma and to this package at the same time, with its variants, before using it. Do not invent one-off views.
 - Each component's options are closed enums. Use only the cases that exist, such as `VigilStatus.checkNow`, `.checkSoon`, `.holding` and `.notHolding`.
 
+## Tab bar
+
+The nurse app has four tabs, in this order, using these SF Symbols. iOS fills the selected one automatically.
+
+| Tab | SF Symbol |
+|---|---|
+| Patients | `person.2` |
+| Alerts | `bell` (`bell.badge` when an alert is waiting) |
+| Unit | `chart.bar` |
+| Settings | `gearshape` |
+
 ## Color
 
 - Use `VigilToken` for component colors and `VigilColor` for screen colors. Never write a hex value or a system color like `.red` on a screen.
