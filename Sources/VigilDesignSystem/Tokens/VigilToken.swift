@@ -50,6 +50,8 @@ public enum VigilToken {
         public static let background = C.surfaceCard
         public static let avatarBackground = C.statusInfoTint
         public static let avatarLabel = C.textPrimary
+        /// Thin outline around portrait photos so each one reads as a clear circle.
+        public static let avatarBorder = C.textPrimary
         public static let name = C.textPrimary
         public static let detail = C.textSecondary
     }

@@ -7,6 +7,7 @@ const instance = figma.selectedInstance
 const name = instance.getString('Name')
 const detail = instance.getString('Detail')
 const initials = instance.getString('Initials')
+const hasPhoto = instance.getBoolean('Photo')
 
 // The row takes the badge's state as a value, so read it from the nested Status Badge.
 const badge = instance.findInstance('Status')
@@ -20,7 +21,7 @@ export default {
     name: "${name}",
     detail: "${detail}",
     initials: "${initials}",
-    status: ${status}
+    status: ${status}${hasPhoto ? ',\n    photo: mother.photo' : ''}
 )`,
   imports: ['import VigilDesignSystem'],
   id: 'patient-row',
