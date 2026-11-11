@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A mother's portrait in a circle with a thin outline, or her initials when there is no photo.
-/// Used inside Patient Row (44 pt) and on the patient screen header (64 pt).
+/// Figma: Patient Avatar. A mother's portrait in a circle, or her initials when there is no photo.
+/// Sizes: 44 pt in list rows, 64 pt on the patient screen header, 96 pt on the full-screen alert.
 /// Decorative for VoiceOver, because her name is always read nearby.
 public struct PatientAvatar: View {
     let initials: String
@@ -22,7 +22,6 @@ public struct PatientAvatar: View {
                     .scaledToFill()
                     .frame(width: size, height: size)
                     .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(VigilToken.Row.avatarBorder, lineWidth: size > 50 ? 1.5 : 1))
             } else {
                 Text(initials)
                     .font(.subheadline.weight(.semibold))
