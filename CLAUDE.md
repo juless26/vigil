@@ -22,7 +22,8 @@ The nurse app has four tabs, in this order, using these SF Symbols. iOS fills th
 ## Color
 
 - Use `VigilToken` for component colors and `VigilColor` for screen colors. Never write a hex value or a system color like `.red` on a screen.
-- Every text and background pair passes WCAG AA at 4.5 to 1 in light and dark mode. Orange and pink appear only as dots, edges and bars, never as small text.
+- Every text and background pair passes WCAG AA at 4.5 to 1 in light and dark mode. On the phone, orange and pink appear only as dots, edges and bars, never as small text.
+- On the watch, small text can use `VigilToken.Watch.accent`, because the watch pink on black passes at 11.8 to 1. Other pinks and oranges still stay out of watch text.
 - Do not add brown, beige or gray. The neutrals are tinted blue (`ink` and `mist`).
 
 ## Accessibility
