@@ -1,5 +1,5 @@
 {
-  "images" : [ { "idiom" : "universal", "filename" : "Hand.pdf" } ],
+  "images" : [ { "idiom" : "universal", "filename" : "Hand.svg" } ],
   "info" : { "author" : "xcode", "version" : 1 },
   "properties" : { "preserves-vector-representation" : true }
 }

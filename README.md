@@ -53,7 +53,7 @@ Screens use `VigilToken` and `VigilLayout` only. Apple Watch always uses the dar
 | `WatchPageDots` | Watch Page Dots |
 | `WristTurnHint` | Wrist Turn Hint |
 
-The watch art lives in `Resources/WatchArt.xcassets`. Each image set is waiting for a PDF. In Figma, select the icon inside each Goal Ring or Wrist Turn Hint variant, export it as PDF, and drop it into the image set with the same name: `HandHeart`, `Hand`, `Pause`, `Star`, `VibrationWaves`, `AudioBars`.
+The watch art lives in `Resources/WatchArt.xcassets`, exported from the Figma components: the four icons as SVG and the vibration waves and audio bars as 3x PNG.
 
 ## Open the package in Xcode
 
