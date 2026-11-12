@@ -6,7 +6,7 @@ const instance = figma.selectedInstance
 
 const alert = instance.getEnum('Alert', {
   'Vibration': '.vibration',
-  'Audio': '.audio',
+  'Strong vibration': '.strongVibration',
 })
 
 export default {

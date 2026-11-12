@@ -36,6 +36,7 @@ The nurse app has four tabs, in this order, using these SF Symbols. iOS fills th
 
 ## Words
 
+- Watch alerts are vibrations only, never sound, so they do not wake the baby. Tier 1 is a gentle tap. Tier 2 is a harder, longer tap. If she still does not respond, the nurse gets Check soon.
 - Alerts describe what the watch measured, not the mother. Write "The watch vibrated twice and Malika has not responded", not "Malika fell asleep again".
 - Lists show what is happening now. Keep date of birth, diagnosis and medication off any screen a passerby could read. The new mother setup form is the exception: the nurse enters and sees these there.
 - Use sentence case and US spelling.
