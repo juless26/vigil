@@ -42,8 +42,9 @@ public enum VigilToken {
         public static let title = C.textPrimary
         public static let body = C.textSecondary
         public static let meta = C.textSecondary
+        /// Only Check now cards are filled. Check soon cards are white with an orange edge.
         public static func background(_ level: AlertLevel) -> Color {
-            level == .checkNow ? C.statusCheckNowTint : C.statusCheckSoonTint
+            level == .checkNow ? C.statusCheckNowTint : C.surfaceCard
         }
         public static func border(_ level: AlertLevel) -> Color {
             level == .checkNow ? C.statusCheckNow : C.statusCheckSoon
