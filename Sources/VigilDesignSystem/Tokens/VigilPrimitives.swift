@@ -34,6 +34,8 @@ enum VigilPrimitive {
     static let mist100 = Color(hex: 0xE8EAFB)
     static let mist50 = Color(hex: 0xF3F4FE)
     static let white = Color(hex: 0xFFFFFF)
+    static let black = Color(hex: 0x000000)
+    static let pinkWatch = Color(hex: 0xFFA3F1)
 
     static let tintCheckNowLight = Color(hex: 0xFBE4E7)
     static let tintCheckNowDark = Color(hex: 0x44182F)

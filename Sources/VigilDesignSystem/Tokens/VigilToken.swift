@@ -4,6 +4,7 @@ import SwiftUI
 /// Matches the "Vigil Component" collection in Figma. Each one points to a `VigilColor`.
 public enum VigilToken {
     private typealias C = VigilColor
+    private typealias P = VigilPrimitive
 
     public enum Badge {
         public static let label = C.textPrimary
@@ -87,6 +88,13 @@ public enum VigilToken {
     public enum Progress {
         public static let track = C.surfaceControl
         public static let fill = C.statusHolding
+    }
+
+    /// Watch screens. One pink for the ring, icons, hearts and the pause sign.
+    public enum Watch {
+        public static let background = P.black
+        public static let accent = P.pinkWatch
+        public static let iconLine = P.white
     }
 
     public static let chevron = C.textTertiary
