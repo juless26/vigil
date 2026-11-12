@@ -17,7 +17,7 @@ The nurse app has four tabs, in this order, using these SF Symbols. iOS fills th
 | Patients | `person.2` |
 | Alerts | `bell` (`bell.badge` when an alert is waiting) |
 | Unit | `chart.bar` |
-| Settings | `gearshape` |
+| Settings | `gear` |
 
 ## Color
 

@@ -90,11 +90,11 @@ public enum VigilToken {
         public static let fill = C.statusHolding
     }
 
-    /// Watch screens. One pink for the ring, icons, hearts and the pause sign.
+    /// Watch screens. Pink for the ring and hearts; white for icon outlines and the pause sign.
     public enum Watch {
         public static let background = P.black
         public static let accent = P.pinkWatch
-        public static let iconLine = P.white
+        public static let icon = P.white
     }
 
     public static let chevron = C.textTertiary
