@@ -60,7 +60,8 @@ public struct AlertCard: View {
                 .font(.body)
                 .foregroundStyle(VigilToken.Alert.body)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: VigilLayout.Space.s) {
+            // Stacked full width so long labels never get cut off at large text sizes.
+            VStack(spacing: VigilLayout.Space.s) {
                 VigilButton(primary.label, style: .filled, action: primary.handler)
                 VigilButton(secondary.label, style: .tinted, action: secondary.handler)
             }
