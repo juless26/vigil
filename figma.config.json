@@ -1,7 +1,10 @@
 {
   "codeConnect": {
-    "include": ["figma/**/*.figma.ts"],
+    "include": [
+      "figma/**/*.figma.ts"
+    ],
     "label": "SwiftUI",
-    "language": "swift"
+    "language": "swift",
+    "parser": "html"
   }
 }
