@@ -37,7 +37,7 @@ The nurse app has four tabs, in this order, using these SF Symbols. iOS fills th
 ## Words
 
 - Alerts describe what the watch measured, not the mother. Write "The watch vibrated twice and Malika has not responded", not "Malika fell asleep again".
-- Lists show what is happening now. Keep date of birth, diagnosis and medication off any screen a passerby could read.
+- Lists show what is happening now. Keep date of birth, diagnosis and medication off any screen a passerby could read. The new mother setup form is the exception: the nurse enters and sees these there.
 - Use sentence case and US spelling.
 
 ## Code Connect
