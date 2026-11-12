@@ -82,8 +82,8 @@ public struct AlertCard: View {
 #Preview {
     AlertCard(
         level: .checkNow,
-        title: "Malika may be asleep",
-        message: "The watch tapped Malika twice and she has not responded. Her heart rate dropped from 80 to 66 bpm in 4 minutes, below her resting rate of 74.",
+        title: "No response to two taps",
+        message: "Her heart rate dropped from 80 to 66 bpm in 4 minutes, below her resting rate of 74.",
         time: "2 min ago",
         primary: .init("I’m going now") {},
         secondary: .init("Call charge nurse") {}
