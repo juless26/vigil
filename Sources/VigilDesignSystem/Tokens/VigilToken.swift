@@ -29,7 +29,10 @@ public enum VigilToken {
     public enum Button {
         public static let filledBackground = C.actionPrimary
         public static let filledLabel = C.textOnAction
-        public static let tintedBackground = C.actionTint
+        /// Same as the card surface. The blue edge carries the button shape.
+        public static let tintedBackground = C.surfaceCard
+        /// 1.5 pt edge, at least 5 to 1 against every background.
+        public static let tintedBorder = C.actionPrimary
         public static let tintedLabel = C.actionPrimary
         public static let disabledBackground = C.surfaceControl
         public static let disabledLabel = C.textSecondary

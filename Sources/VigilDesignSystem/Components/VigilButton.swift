@@ -49,6 +49,11 @@ struct VigilButtonStyle: ButtonStyle {
             .padding(.horizontal, size == .large ? 20 : 16)
             .frame(maxWidth: .infinity, minHeight: size == .large ? VigilLayout.Size.buttonLarge : VigilLayout.Size.buttonMedium)
             .background(backgroundColor, in: Capsule())
+            .overlay {
+                if style == .tinted && isEnabled {
+                    Capsule().strokeBorder(VigilToken.Button.tintedBorder, lineWidth: 1.5)
+                }
+            }
             .opacity(configuration.isPressed ? VigilLayout.pressedOpacity : 1)
             .contentShape(Capsule())
     }
