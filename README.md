@@ -9,7 +9,7 @@ This repository holds the shared design system, `VigilDesignSystem`, as a Swift 
 | Folder | What it holds |
 |---|---|
 | `Sources/VigilDesignSystem/Tokens` | Colors in three tiers, plus spacing and sizes |
-| `Sources/VigilDesignSystem/Components` | The nine SwiftUI components |
+| `Sources/VigilDesignSystem/Components` | The phone components, and the watch components in `Watch/` |
 | `figma` | One Code Connect template per Figma component |
 
 ### Color tiers
@@ -38,6 +38,22 @@ Screens use `VigilToken` and `VigilLayout` only. Apple Watch always uses the dar
 | `FormTextRow`, `FormPickerRow` | Form Row |
 | `SectionHeader` | Section Header |
 | `ChevronIcon` | Icon / Chevron Right |
+| `PatientAvatar` | Patient Avatar |
+| `ChoiceRow` | Choice Row |
+| `ProgressBar` | Progress Bar |
+| `SessionCard` | Session Card |
+
+### Watch components
+
+| Swift | Figma component |
+|---|---|
+| `GoalRing` | Goal Ring |
+| `GoalReadout` | Goal Readout |
+| `WatchButton` | Watch Button |
+| `WatchPageDots` | Watch Page Dots |
+| `WristTurnHint` | Wrist Turn Hint |
+
+The watch art lives in `Resources/WatchArt.xcassets`. Each image set is waiting for a PDF. In Figma, select the icon inside each Goal Ring or Wrist Turn Hint variant, export it as PDF, and drop it into the image set with the same name: `HandHeart`, `Hand`, `Pause`, `Star`, `VibrationWaves`, `AudioBars`.
 
 ## Open the package in Xcode
 

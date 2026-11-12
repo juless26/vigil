@@ -11,6 +11,10 @@ let package = Package(
         .library(name: "VigilDesignSystem", targets: ["VigilDesignSystem"])
     ],
     targets: [
-        .target(name: "VigilDesignSystem", path: "Sources/VigilDesignSystem")
+        .target(
+            name: "VigilDesignSystem",
+            path: "Sources/VigilDesignSystem",
+            resources: [.process("Resources")]
+        )
     ]
 )
