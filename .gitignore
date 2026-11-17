@@ -4,3 +4,4 @@ node_modules/
 DerivedData/
 *.xcuserstate
 .DS_Store
+xcuserdata/

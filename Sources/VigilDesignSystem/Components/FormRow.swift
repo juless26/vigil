@@ -29,6 +29,7 @@ public struct FormTextRow: View {
     }
 }
 
+#if !os(watchOS)
 /// Figma: Form Row, Type=Picker. One choice from a list. Opens a menu instead of a stack of checkboxes.
 public struct FormPickerRow<Option: Hashable>: View {
     let label: String
@@ -67,3 +68,4 @@ public struct FormPickerRow<Option: Hashable>: View {
         .accessibilityLabel("\(label), \(title(selection))")
     }
 }
+#endif
