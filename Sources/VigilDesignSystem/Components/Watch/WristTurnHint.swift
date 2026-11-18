@@ -1,34 +1,28 @@
 import SwiftUI
 
-/// Figma: Wrist Turn Hint. A hand rocks 30° each way beside the vibration waves,
-/// (four waves for Tier 1, six for Tier 2)
+/// Figma: Wrist Turn Hint. A hand rocks 30° each way beside six vibration waves
 /// to show her how to turn her wrist to stop the alert.
 /// Alerts are vibrations only, so they never wake the baby.
 /// The hand holds still when Reduce Motion is on.
 public struct WristTurnHint: View {
     public enum Alert: Sendable {
-        /// Tier 1. A gentle tap only she feels.
-        case vibration
-        /// Tier 2. A harder, longer tap. Six waves instead of four, and the hand rocks twice as fast.
+        /// The watch alert. Firm taps that repeat until she turns her wrist.
         case strongVibration
 
         var artName: String {
             switch self {
-            case .vibration: return "VibrationWaves"
             case .strongVibration: return "StrongVibrationWaves"
             }
         }
 
         var artSize: CGSize {
             switch self {
-            case .vibration: return CGSize(width: 40, height: 50)
             case .strongVibration: return CGSize(width: 46, height: 56)
             }
         }
 
         var rockDuration: Double {
             switch self {
-            case .vibration: return 0.9
             case .strongVibration: return 0.45
             }
         }

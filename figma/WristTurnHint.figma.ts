@@ -5,7 +5,6 @@ import figma from 'figma'
 const instance = figma.selectedInstance
 
 const alert = instance.getEnum('Alert', {
-  'Vibration': '.vibration',
   'Strong vibration': '.strongVibration',
 })
 

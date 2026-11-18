@@ -84,22 +84,21 @@ struct ContentView: View {
         GeometryReader { geo in
             let f = FigmaScale(size: geo.size)
             VStack(spacing: 0) {
-                // The hearts take whatever space the words leave, up to 120 × 110
-                // (about 15% larger than Figma's 105 × 96, which read small on the watch),
+                // The hearts take whatever space the words leave, up to Figma's 136 × 128,
                 // centered in that space. The words always keep their full size.
                 Image("Hearts")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 120, maxHeight: 110)
+                    .frame(maxWidth: 136, maxHeight: 128)
                     .frame(minHeight: 40, maxHeight: .infinity)
                     .accessibilityHidden(true)
+                // Figma: the welcome sits right under the hearts.
                 message("Welcome \(manager.motherName)!", f)
-                    .padding(.top, f.y(8))
                 // One text style smaller than the welcome, so the greeting leads.
                 message("\(WorkoutManager.goalMinutes / 60) Hour Goal", f, style: .footnote)
-                    .padding(.top, f.y(4))
+                    .padding(.top, f.y(7))
                 Spacer(minLength: f.y(12))
-                    .frame(maxHeight: f.y(24))
+                    .frame(maxHeight: f.y(31))
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -121,7 +120,7 @@ struct ContentView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .padding(.horizontal, f.x(6))
-                    .padding(.top, f.y(4))
+                    .padding(.top, f.y(10))
                 Spacer(minLength: f.y(2))
                 WatchIconButton(.pause, label: "Pause for nurse") { manager.pauseHolding() }
                     .padding(.bottom, f.y(12))
@@ -152,10 +151,10 @@ struct ContentView: View {
         FigmaLayout { f in
             VStack(spacing: 0) {
                 goalHeader(icon: .pause, f)
-                Spacer(minLength: 0)
+                // Figma: the free space splits 3 to 5 above and below the message.
+                ForEach(0..<3, id: \.self) { _ in Spacer(minLength: 0) }
                 message("Please wait for the nurse.", f)
-                Spacer(minLength: 0)
-                Spacer(minLength: 0)
+                ForEach(0..<5, id: \.self) { _ in Spacer(minLength: 0) }
             }
         }
     }
@@ -172,7 +171,7 @@ struct ContentView: View {
                 Image("GoalHeart")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 58, height: 53)
+                    .frame(width: 71, height: 65)
                     .accessibilityHidden(true)
                     .padding(.top, f.y(14))
                 Spacer(minLength: f.y(4))
