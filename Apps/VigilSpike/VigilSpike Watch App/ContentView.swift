@@ -5,9 +5,20 @@ import VigilDesignSystem
 /// She never sees her heart rate here. Her nurse sees it on the iPhone.
 struct ContentView: View {
     @State private var manager = WorkoutManager()
+    /// Height of the strip at the top that holds the clock, measured once for the whole app.
+    /// Swipeable pages report it as zero, so every screen reads it from here instead.
+    @State private var clockStrip: CGFloat = 0
 
     var body: some View {
         screen
+            .environment(\.clockStrip, clockStrip > 0 ? clockStrip : 30)
+            .background {
+                GeometryReader { geo in
+                    Color.clear
+                        .onAppear { clockStrip = geo.safeAreaInsets.top }
+                        .onChange(of: geo.safeAreaInsets.top) { _, top in clockStrip = top }
+                }
+            }
             .background(VigilToken.Watch.background)
             .task { await manager.appeared() }
     }
@@ -39,14 +50,17 @@ struct ContentView: View {
         let percent = Int((min(manager.goalProgress, 1) * 100).rounded(.down))
         let minutes = min(manager.heldSeconds / 60, WorkoutManager.goalMinutes)
         return HStack(alignment: .top, spacing: 0) {
+            // The ring rises into the empty strip beside the clock.
             GoalRing(icon: icon, progress: manager.goalProgress)
+                .padding(.top, 6)
             Spacer(minLength: 0)
+            // The readout sits right under the clock at the top right.
             GoalReadout(percent: "GOAL \(percent)%",
                         minutes: "\(minutes)/\(WorkoutManager.goalMinutes) MIN")
-                .padding(.top, 4)
+                // The clock strip includes space above the time, so the readout can start a little inside it.
+                .padding(.top, max(f.safeTop - 10, 18))
         }
         .padding(.horizontal, f.x(14))
-        .padding(.top, f.y(4))
     }
 
     /// Figma message text: 12 in from each edge, centered.
@@ -108,12 +122,23 @@ struct ContentView: View {
             FigmaLayout { f in
                 VStack(spacing: 0) {
                     goalHeader(icon: .handHeart, f)
-                    Spacer(minLength: f.y(8))
+                    // All the free space sits here, so the message, pause and dots
+                    // rest together at the bottom of the screen.
+                    Spacer(minLength: f.y(2))
                     message("Snuggle time!", f, color: VigilToken.Watch.accent, weight: .semibold)
-                    Spacer(minLength: f.y(8))
-                    Spacer(minLength: 0)
+                    // Always one line. At large text sizes it shrinks just enough to fit, to 70% at most.
+                    Text("Press pause for nurse")
+                        .font(.caption2)
+                        .foregroundStyle(VigilColor.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .padding(.horizontal, f.x(6))
+                        .padding(.top, f.y(4))
+                    WatchIconButton(.pause, label: "Pause for nurse") { manager.pauseHolding() }
+                        .padding(.top, f.y(2))
                     WatchPageDots(page: .first)
-                        .padding(.bottom, f.y(16))
+                        .padding(.top, f.y(6))
+                        .padding(.bottom, f.y(10))
                 }
             }
             FigmaLayout { f in
@@ -126,27 +151,28 @@ struct ContentView: View {
                     }
                     Spacer(minLength: f.y(4))
                     WatchPageDots(page: .second)
-                        .padding(.bottom, f.y(16))
+                        .padding(.bottom, f.y(8))
                 }
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .ignoresSafeArea(edges: [.top, .bottom])
     }
 
-    /// Figma: Watch · Tier 2 · Strong Vibration, now the only alert.
-    /// The watch taps until she turns her wrist. Her hands hold the baby, so nothing needs tapping.
+    /// Figma: Watch · Tier 2 · Strong Vibration, now the only alert, without the End button.
+    /// The watch taps until she turns her wrist. Her hands hold the baby, so the screen has
+    /// nothing to tap. The nurse can end the session from the phone.
     private var alertScreen: some View {
         FigmaLayout { f in
             VStack(spacing: 0) {
                 goalHeader(icon: .hand, f)
-                Spacer(minLength: 0)
+                Spacer(minLength: f.y(4))
                 WristTurnHint(alert: .strongVibration)
                 message("Rotate wrist to dismiss vibration alert.", f)
                     .accessibilityHidden(true)
                     .padding(.top, f.y(6))
+                Spacer(minLength: f.y(4))
                 Spacer(minLength: 0)
-                endButton(f)
-                    .padding(.bottom, f.y(18))
             }
         }
     }
@@ -164,24 +190,40 @@ struct ContentView: View {
         }
     }
 
-    /// Figma: Watch · Goal Complete. The falling hearts animation isn't built yet.
+    /// Figma: Watch · Goal Complete, split across two pages so it fits every watch.
+    /// Page 1 celebrates. She swipes left for End Holding Session, the same gesture as during holding.
+    /// The falling hearts animation isn't built yet.
     private var goalCompleteScreen: some View {
-        FigmaLayout { f in
-            VStack(spacing: 0) {
-                goalHeader(icon: .star, f)
-                Spacer(minLength: 0)
-                message("Great job holding \(manager.babyName)!", f)
-                Image("GoalHeart")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 58, height: 53)
-                    .accessibilityHidden(true)
-                    .padding(.top, f.y(14))
-                Spacer(minLength: 0)
-                endButton(f)
-                    .padding(.bottom, f.y(18))
+        TabView {
+            FigmaLayout { f in
+                VStack(spacing: 0) {
+                    goalHeader(icon: .star, f)
+                    Spacer(minLength: f.y(4))
+                    message("Great job holding \(manager.babyName)!", f)
+                    Image("GoalHeart")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 58, height: 53)
+                        .accessibilityHidden(true)
+                        .padding(.top, f.y(14))
+                    Spacer(minLength: f.y(4))
+                    WatchPageDots(page: .first)
+                        .padding(.bottom, f.y(8))
+                }
+            }
+            FigmaLayout { f in
+                VStack(spacing: 0) {
+                    goalHeader(icon: .star, f)
+                    Spacer(minLength: f.y(4))
+                    endButton(f)
+                    Spacer(minLength: f.y(4))
+                    WatchPageDots(page: .second)
+                        .padding(.bottom, f.y(8))
+                }
             }
         }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .ignoresSafeArea(edges: [.top, .bottom])
     }
 }
 
@@ -189,18 +231,21 @@ struct ContentView: View {
 /// Only gaps and insets use it. Components keep their real size.
 struct FigmaScale {
     let size: CGSize
+    /// Height of the strip at the top that holds the watch's clock.
+    var safeTop: CGFloat = 0
     func x(_ figma: CGFloat) -> CGFloat { figma * size.width / 208 }
     func y(_ figma: CGFloat) -> CGFloat { figma * size.height / 248 }
 }
 
-/// Gives a screen the space below the watch's clock, plus a FigmaScale for its gaps.
-/// watchOS always shows the time at the top right, so content starts below it.
+/// Gives a screen the full display, plus a FigmaScale for its gaps and the clock strip's height.
+/// watchOS always shows the time at the top right, so right-side content starts below it.
 private struct FigmaLayout<Content: View>: View {
     @ViewBuilder let content: (FigmaScale) -> Content
+    @Environment(\.clockStrip) private var clockStrip
 
     var body: some View {
         GeometryReader { geo in
-            let f = FigmaScale(size: geo.size)
+            let f = FigmaScale(size: geo.size, safeTop: clockStrip)
             // If her text size is too large for the screen, the screen scrolls instead of cutting off.
             ViewThatFits(in: .vertical) {
                 // Measured at its natural height, then stretched to fill, so ViewThatFits can tell when it's too tall.
@@ -208,11 +253,29 @@ private struct FigmaLayout<Content: View>: View {
                     .frame(width: geo.size.width)
                     .frame(maxHeight: .infinity)
                 ScrollView {
+                    // At least the full screen tall, so spacers still push content
+                    // to the bottom instead of leaving an empty gap there.
                     content(f)
                         .frame(width: geo.size.width)
+                        .frame(minHeight: geo.size.height)
                 }
             }
         }
+        // Screens use the full height, including the strip beside the clock.
+        // Each screen keeps its own content clear of the clock itself.
+        .ignoresSafeArea(edges: [.top, .bottom])
+    }
+}
+
+private struct ClockStripKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 30
+}
+
+extension EnvironmentValues {
+    /// Height of the strip at the top of the watch screen that holds the clock.
+    var clockStrip: CGFloat {
+        get { self[ClockStripKey.self] }
+        set { self[ClockStripKey.self] = newValue }
     }
 }
 

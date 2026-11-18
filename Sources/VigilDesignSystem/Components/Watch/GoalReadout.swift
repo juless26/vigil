@@ -15,8 +15,9 @@ public struct GoalReadout: View {
 
     public var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
+            // Same size as the minutes line, bold so the percent still leads.
             Text(percent)
-                .font(.headline.weight(.bold))
+                .font(.footnote.weight(.bold))
                 .foregroundStyle(VigilColor.textPrimary)
             Text(minutes)
                 .font(.footnote)

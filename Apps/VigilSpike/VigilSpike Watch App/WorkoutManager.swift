@@ -150,10 +150,12 @@ final class WorkoutManager: NSObject {
         }
     }
 
-    /// She tapped Pause Holding. Holding time stops until her nurse resumes it from the iPhone.
+    /// She pressed pause. Holding time stops, the watch shows Wait for Nurse,
+    /// and the nurse's iPhone gets an alert. The nurse resumes holding from the iPhone.
     func pauseHolding() {
         guard phase == .holding else { return }
         phase = .waitingForNurse
+        send(event: "mother asked for nurse")
         send(event: "holding paused")
     }
 

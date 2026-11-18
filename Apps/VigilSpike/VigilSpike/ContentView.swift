@@ -13,6 +13,18 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: VigilLayout.Space.m) {
+                    if let alert = store.nurseAlert {
+                        AlertCard(
+                            level: alert.level,
+                            title: alert.title,
+                            message: alert.message,
+                            time: alert.raisedAt.formatted(date: .omitted, time: .shortened),
+                            primary: alert.level == .checkNow
+                                ? AlertCard.Action("Stop watch vibration") { store.stopWatchVibration(); store.dismissAlert() }
+                                : AlertCard.Action("Resume holding") { store.resumeHolding(); store.dismissAlert() },
+                            secondary: AlertCard.Action("Dismiss") { store.dismissAlert() })
+                    }
+
                     SectionHeader("Tester")
                     VStack(spacing: 0) {
                         FormTextRow(label: "Mother", prompt: "Required", text: $store.motherName)

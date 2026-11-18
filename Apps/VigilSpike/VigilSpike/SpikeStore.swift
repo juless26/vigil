@@ -1,6 +1,7 @@
 import Foundation
 import WatchConnectivity
 import Observation
+import VigilDesignSystem
 
 /// One row from the watch, or one event, as the iPhone logged it.
 struct LogRow: Identifiable, Sendable {
@@ -13,6 +14,15 @@ struct LogRow: Identifiable, Sendable {
     let event: String
     let queued: Bool
     var ruleState: String = ""
+}
+
+/// An alert for the nurse, shown as an Alert Card at the top of the phone app until she acts.
+struct NurseAlert: Identifiable {
+    let id = UUID()
+    let level: AlertLevel
+    let title: String
+    let message: String
+    let raisedAt: Date
 }
 
 /// Receives rows from the watch, runs the alert rule, shows the latest values,
@@ -97,6 +107,11 @@ final class SpikeStore: NSObject {
         record(event: "names sent")
     }
 
+    /// The alert waiting for the nurse, if any.
+    var nurseAlert: NurseAlert?
+
+    func dismissAlert() { nurseAlert = nil }
+
     /// True while holding is paused and the watch shows Wait for Nurse.
     var holdingPaused = false
 
@@ -144,12 +159,20 @@ final class SpikeStore: NSObject {
             rule.endSession()
             sessionActive = false
             holdingPaused = false
+        } else if row.event == "mother asked for nurse" {
+            nurseAlert = NurseAlert(
+                level: .checkSoon,
+                title: "Pause pressed on \(motherName)'s watch",
+                message: "Holding time is paused until you resume it.",
+                raisedAt: row.receivedAt)
         } else if row.event == "holding paused" {
             holdingPaused = true
         } else if row.event == "holding resumed" {
             holdingPaused = false
         } else if row.event == "mother responded" || row.event == "vibration stopped from iPhone" {
             rule.alertAnswered()
+            // She turned her wrist after the nurse was alerted, so the Check now alert has been answered.
+            if row.event == "mother responded", nurseAlert?.level == .checkNow { nurseAlert = nil }
         }
 
         // Data rows go through the rule in time order. Rows that arrive late from the queue are logged but not re-run.
@@ -183,6 +206,13 @@ final class SpikeStore: NSObject {
         }
         if out.startWatchAlert, vibrateOnAlert {
             sendWatchAlert()
+        }
+        if out.alertNurse {
+            nurseAlert = NurseAlert(
+                level: .checkNow,
+                title: "No response to the watch alert",
+                message: "The watch vibrated for 30 seconds and \(motherName) has not turned her wrist.",
+                raisedAt: Date())
         }
     }
 
