@@ -19,10 +19,8 @@ struct ContentView: View {
                             title: alert.title,
                             message: alert.message,
                             time: alert.raisedAt.formatted(date: .omitted, time: .shortened),
-                            primary: alert.level == .checkNow
-                                ? AlertCard.Action("Stop watch vibration") { store.stopWatchVibration(); store.dismissAlert() }
-                                : AlertCard.Action("Resume holding") { store.resumeHolding(); store.dismissAlert() },
-                            secondary: AlertCard.Action("Dismiss") { store.dismissAlert() })
+                            primary: primaryAction(for: alert),
+                            secondary: secondaryAction(for: alert))
                     }
 
                     SectionHeader("Tester")
@@ -42,6 +40,9 @@ struct ContentView: View {
                     VigilButton("Start holding") { store.startHolding() }
                     if store.holdingPaused {
                         VigilButton("Resume holding") { store.resumeHolding() }
+                    }
+                    if store.sessionActive {
+                        VigilButton("Stop holding", style: .tinted) { store.stopHolding() }
                     }
                     Text("Open Vigil on the watch first. It waits on the 2 Hour Goal screen.")
                         .font(.footnote)
@@ -121,6 +122,27 @@ struct ContentView: View {
 
     private var baselineText: String {
         store.rule.baseline.map { "\(Int($0.rounded()))" } ?? "--"
+    }
+
+    // The nurse decides what happens next, so each card offers the two real choices.
+    private func primaryAction(for alert: NurseAlert) -> AlertCard.Action {
+        switch alert.kind {
+        case .vibration:
+            AlertCard.Action("Stop watch vibration") { store.stopWatchVibration(); store.dismissAlert() }
+        case .paused:
+            AlertCard.Action("Resume holding") { store.resumeHolding(); store.dismissAlert() }
+        case .goalReached:
+            AlertCard.Action("Stop holding") { store.stopHolding(); store.dismissAlert() }
+        }
+    }
+
+    private func secondaryAction(for alert: NurseAlert) -> AlertCard.Action {
+        switch alert.kind {
+        case .vibration, .goalReached:
+            AlertCard.Action("Dismiss") { store.dismissAlert() }
+        case .paused:
+            AlertCard.Action("Stop holding") { store.stopHolding(); store.dismissAlert() }
+        }
     }
 }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Watch icon button. A 56 × 36 capsule on the dark control surface, with a white icon.
 /// The tap area grows to 44 pt tall so it meets the touch minimum.
-/// Not in Figma yet: add a matching "Watch Icon Button" component there, then a Code Connect template.
+/// Figma: Watch Icon Button.
 public struct WatchIconButton: View {
     public enum Icon: String, Sendable {
         /// Pause holding and call the nurse.

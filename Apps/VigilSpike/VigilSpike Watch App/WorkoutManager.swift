@@ -145,13 +145,17 @@ final class WorkoutManager: NSObject {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 guard !Task.isCancelled, let self else { return }
-                if self.phase == .holding { self.heldSeconds += 1 }
+                if self.phase == .holding {
+                    self.heldSeconds += 1
+                    // Tell the nurse once, the second she reaches her goal.
+                    if self.heldSeconds == Self.goalMinutes * 60 { self.send(event: "goal reached") }
+                }
             }
         }
     }
 
     /// She pressed pause. Holding time stops, the watch shows Wait for Nurse,
-    /// and the nurse's iPhone gets an alert. The nurse resumes holding from the iPhone.
+    /// and the nurse's iPhone gets an alert. The nurse resumes or stops holding from the iPhone.
     func pauseHolding() {
         guard phase == .holding else { return }
         phase = .waitingForNurse
@@ -357,6 +361,10 @@ extension WorkoutManager: WCSessionDelegate {
         }
         if message["start"] as? Bool == true {
             Task { @MainActor in await self.start() }
+            return
+        }
+        if message["stop"] as? Bool == true {
+            Task { @MainActor in await self.end() }
             return
         }
         if message["resume"] as? Bool == true {

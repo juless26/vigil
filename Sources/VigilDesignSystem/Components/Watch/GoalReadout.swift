@@ -19,9 +19,14 @@ public struct GoalReadout: View {
             Text(percent)
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(VigilColor.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             Text(minutes)
                 .font(.footnote)
                 .foregroundStyle(VigilToken.Watch.accent)
+                // Each line stays on one line beside the ring, shrinking slightly at large text sizes.
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .accessibilityElement(children: .combine)
     }

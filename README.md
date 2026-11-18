@@ -49,9 +49,8 @@ Screens use `VigilToken` and `VigilLayout` only. Apple Watch always uses the dar
 |---|---|
 | `GoalRing` | Goal Ring |
 | `GoalReadout` | Goal Readout |
-| `WatchButton` | Watch Button |
-| `WatchPageDots` | Watch Page Dots |
 | `WristTurnHint` | Wrist Turn Hint |
+| `WatchIconButton` | Watch Icon Button |
 
 The watch art lives in `Resources/WatchArt.xcassets`, exported from the Figma components: the four icons as SVG and the two vibration wave images as 3x PNG. `StrongVibrationWaves` is Jules's waves with two more arcs on each side.
 

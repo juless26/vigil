@@ -23,6 +23,9 @@ struct NurseAlert: Identifiable {
     let title: String
     let message: String
     let raisedAt: Date
+    /// What the card asks the nurse to do.
+    var kind: Kind = .vibration
+    enum Kind { case vibration, paused, goalReached }
 }
 
 /// Receives rows from the watch, runs the alert rule, shows the latest values,
@@ -39,7 +42,7 @@ final class SpikeStore: NSObject {
 
     var latestReading: LogRow? { rows.last { $0.heartRate != nil } }
 
-    private var sessionActive = false
+    private(set) var sessionActive = false
     private var lastProcessedTime: Date?
     private var lastDataReceivedAt: Date?
     private var reportedNoData = false
@@ -121,6 +124,9 @@ final class SpikeStore: NSObject {
     /// The nurse arrived and resumes holding time.
     func resumeHolding() { sendToWatch(["resume": true], label: "resume") }
 
+    /// The nurse ends the session. The watch goes back to the welcome screen.
+    func stopHolding() { sendToWatch(["stop": true], label: "stop") }
+
     private func sendToWatch(_ message: [String: Any], label: String) {
         guard WCSession.default.isReachable else {
             record(event: "\(label) not sent: watch not reachable")
@@ -163,8 +169,16 @@ final class SpikeStore: NSObject {
             nurseAlert = NurseAlert(
                 level: .checkSoon,
                 title: "Pause pressed on \(motherName)'s watch",
-                message: "Holding time is paused until you resume it.",
-                raisedAt: row.receivedAt)
+                message: "Holding time is paused. Resume or stop holding after you talk with her.",
+                raisedAt: row.receivedAt,
+                kind: .paused)
+        } else if row.event == "goal reached" {
+            nurseAlert = NurseAlert(
+                level: .checkSoon,
+                title: "\(motherName) reached her 2 hour goal",
+                message: "Go relieve her when you can.",
+                raisedAt: row.receivedAt,
+                kind: .goalReached)
         } else if row.event == "holding paused" {
             holdingPaused = true
         } else if row.event == "holding resumed" {

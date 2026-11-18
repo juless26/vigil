@@ -35,7 +35,7 @@ struct ContentView: View {
                 if manager.goalReached {
                     goalCompleteScreen
                 } else {
-                    holdingPages
+                    holdingScreen
                 }
             case .waitingForNurse:
                 waitForNurseScreen
@@ -74,16 +74,6 @@ struct ContentView: View {
             .padding(.horizontal, f.x(12))
     }
 
-    /// Figma buttons sit 16 in from each edge. WatchButton adds 4 above and below for the tap area.
-    private func button(_ title: String, _ f: FigmaScale, action: @escaping () -> Void) -> some View {
-        WatchButton(title, action: action)
-            .padding(.horizontal, f.x(16))
-    }
-
-    private func endButton(_ f: FigmaScale) -> some View {
-        button("End Holding Session", f) { Task { await manager.end() } }
-    }
-
     // MARK: Screens
     // Each gap is the Figma gap, resized in proportion to this watch's screen.
     // Rings, icons, text and buttons keep their real size.
@@ -115,48 +105,28 @@ struct ContentView: View {
         }
     }
 
-    /// Figma: Watch · Snuggle Time (page 1) and Watch · Holding Controls (page 2).
-    /// She swipes left for Pause and End.
-    private var holdingPages: some View {
-        TabView {
-            FigmaLayout { f in
-                VStack(spacing: 0) {
-                    goalHeader(icon: .handHeart, f)
-                    // All the free space sits here, so the message, pause and dots
-                    // rest together at the bottom of the screen.
-                    Spacer(minLength: f.y(2))
-                    message("Snuggle time!", f, color: VigilToken.Watch.accent, weight: .semibold)
-                    // Always one line. At large text sizes it shrinks just enough to fit, to 70% at most.
-                    Text("Press pause for nurse")
-                        .font(.caption2)
-                        .foregroundStyle(VigilColor.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .padding(.horizontal, f.x(6))
-                        .padding(.top, f.y(4))
-                    WatchIconButton(.pause, label: "Pause for nurse") { manager.pauseHolding() }
-                        .padding(.top, f.y(2))
-                    WatchPageDots(page: .first)
-                        .padding(.top, f.y(6))
-                        .padding(.bottom, f.y(10))
-                }
-            }
-            FigmaLayout { f in
-                VStack(spacing: 0) {
-                    goalHeader(icon: .handHeart, f)
-                    Spacer(minLength: f.y(4))
-                    VStack(spacing: 2) {
-                        button("Pause Holding", f) { manager.pauseHolding() }
-                        endButton(f)
-                    }
-                    Spacer(minLength: f.y(4))
-                    WatchPageDots(page: .second)
-                        .padding(.bottom, f.y(8))
-                }
+    /// Figma: Watch · Snuggle Time. Her only holding screen.
+    /// Pause calls the nurse, who then resumes or stops holding from the phone.
+    private var holdingScreen: some View {
+        FigmaLayout { f in
+            VStack(spacing: 0) {
+                goalHeader(icon: .handHeart, f)
+                // The message and pause line sit centered between the goal and the pause button.
+                Spacer(minLength: f.y(2))
+                message("Snuggle time!", f, color: VigilToken.Watch.accent, weight: .semibold)
+                // Always one line. At large text sizes it shrinks just enough to fit, to 70% at most.
+                Text("Press pause for nurse")
+                    .font(.caption2)
+                    .foregroundStyle(VigilColor.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, f.x(6))
+                    .padding(.top, f.y(4))
+                Spacer(minLength: f.y(2))
+                WatchIconButton(.pause, label: "Pause for nurse") { manager.pauseHolding() }
+                    .padding(.bottom, f.y(12))
             }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .ignoresSafeArea(edges: [.top, .bottom])
     }
 
     /// Figma: Watch · Tier 2 · Strong Vibration, now the only alert, without the End button.
@@ -190,40 +160,25 @@ struct ContentView: View {
         }
     }
 
-    /// Figma: Watch · Goal Complete, split across two pages so it fits every watch.
-    /// Page 1 celebrates. She swipes left for End Holding Session, the same gesture as during holding.
+    /// Figma: Watch · Goal Complete. The nurse's phone is told she reached her goal,
+    /// and the nurse comes to relieve her. Nothing to tap.
     /// The falling hearts animation isn't built yet.
     private var goalCompleteScreen: some View {
-        TabView {
-            FigmaLayout { f in
-                VStack(spacing: 0) {
-                    goalHeader(icon: .star, f)
-                    Spacer(minLength: f.y(4))
-                    message("Great job holding \(manager.babyName)!", f)
-                    Image("GoalHeart")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 58, height: 53)
-                        .accessibilityHidden(true)
-                        .padding(.top, f.y(14))
-                    Spacer(minLength: f.y(4))
-                    WatchPageDots(page: .first)
-                        .padding(.bottom, f.y(8))
-                }
-            }
-            FigmaLayout { f in
-                VStack(spacing: 0) {
-                    goalHeader(icon: .star, f)
-                    Spacer(minLength: f.y(4))
-                    endButton(f)
-                    Spacer(minLength: f.y(4))
-                    WatchPageDots(page: .second)
-                        .padding(.bottom, f.y(8))
-                }
+        FigmaLayout { f in
+            VStack(spacing: 0) {
+                goalHeader(icon: .star, f)
+                Spacer(minLength: f.y(4))
+                message("Great job holding \(manager.babyName)!", f)
+                Image("GoalHeart")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 58, height: 53)
+                    .accessibilityHidden(true)
+                    .padding(.top, f.y(14))
+                Spacer(minLength: f.y(4))
+                Spacer(minLength: 0)
             }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .ignoresSafeArea(edges: [.top, .bottom])
     }
 }
 
