@@ -363,6 +363,14 @@ extension WorkoutManager: WCSessionDelegate {
             Task { @MainActor in await self.start() }
             return
         }
+        // Test only: jump to 10 seconds before the goal, so goal complete can be checked
+        // without holding for 2 hours. The goal-reached alert still fires on its own.
+        if message["jumpToGoal"] as? Bool == true {
+            Task { @MainActor in
+                if self.phase == .holding { self.heldSeconds = max(self.heldSeconds, Self.goalMinutes * 60 - 10) }
+            }
+            return
+        }
         if message["stop"] as? Bool == true {
             Task { @MainActor in await self.end() }
             return

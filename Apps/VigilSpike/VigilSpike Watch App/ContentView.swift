@@ -53,7 +53,9 @@ struct ContentView: View {
             // The ring rises into the empty strip beside the clock.
             GoalRing(icon: icon, progress: manager.goalProgress)
                 .padding(.top, 6)
-            Spacer(minLength: 0)
+            // Always a clear gap between the ring and the goal readout. At large text sizes
+            // the readout shrinks a little (to 70% at most) to keep it.
+            Spacer(minLength: f.x(10))
             // The readout sits right under the clock at the top right.
             GoalReadout(percent: "GOAL \(percent)%",
                         minutes: "\(minutes)/\(WorkoutManager.goalMinutes) MIN")
@@ -166,16 +168,25 @@ struct ContentView: View {
         FigmaLayout { f in
             VStack(spacing: 0) {
                 goalHeader(icon: .star, f)
-                Spacer(minLength: f.y(4))
-                message("Great job holding \(manager.babyName)!", f)
+                Spacer(minLength: f.y(8))
+                // At most two lines. At large text sizes it shrinks a little to fit, to 75% at most.
+                Text("Great job holding \(manager.babyName)!")
+                    .font(.body)
+                    .foregroundStyle(VigilColor.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+                    .padding(.horizontal, f.x(12))
+                // The heart is Figma's 71 x 65 when there is room, and gives up
+                // some size before the words do, so nothing crowds.
                 Image("GoalHeart")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 71, height: 65)
+                    .frame(maxWidth: 71, maxHeight: 65)
+                    .frame(minHeight: 36)
                     .accessibilityHidden(true)
-                    .padding(.top, f.y(14))
-                Spacer(minLength: f.y(4))
-                Spacer(minLength: 0)
+                    .padding(.top, f.y(12))
+                Spacer(minLength: f.y(10))
             }
         }
     }

@@ -124,6 +124,9 @@ final class SpikeStore: NSObject {
     /// The nurse arrived and resumes holding time.
     func resumeHolding() { sendToWatch(["resume": true], label: "resume") }
 
+    /// Test only: moves held time to 10 seconds before the goal.
+    func jumpToGoal() { sendToWatch(["jumpToGoal": true], label: "jump to goal") }
+
     /// The nurse ends the session. The watch goes back to the welcome screen.
     func stopHolding() { sendToWatch(["stop": true], label: "stop") }
 

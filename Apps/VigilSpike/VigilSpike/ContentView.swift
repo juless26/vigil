@@ -76,6 +76,7 @@ struct ContentView: View {
                     SectionHeader("Test the alert")
                     VigilButton("Start alert on watch", style: .tinted) { store.sendWatchAlert() }
                     VigilButton("Stop watch vibration", style: .tinted) { store.stopWatchVibration() }
+                    VigilButton("Jump to goal", style: .tinted) { store.jumpToGoal() }
 
                     SectionHeader("Log")
                     Text(store.fileURL.lastPathComponent)
