@@ -7,14 +7,39 @@ import Observation
 
 /// Runs a workout session so the watch reads heart rate about every 5 seconds,
 /// counts wrist movement, and sends one row to the iPhone every 5 seconds.
-/// Spike only: in the real app the nurse starts the session from the iPhone.
+/// The nurse starts and resumes holding from the iPhone. The mother never sees her heart rate.
 @Observable
 final class WorkoutManager: NSObject {
-    enum State { case idle, running, ended }
+    /// Which Figma screen the watch shows.
+    enum Phase {
+        /// Figma: Watch · Welcome. Shown when the app opens.
+        case welcome
+        /// Figma: Watch · 2 Hour Goal. Shown after a session ends. Looks the same as welcome.
+        case waiting
+        /// Figma: Watch · Snuggle Time and Holding Controls.
+        case holding
+        /// Figma: Watch · Wait for Nurse. Holding time is paused until the nurse resumes it.
+        case waitingForNurse
+    }
 
-    var state: State = .idle
+    /// Names the nurse sets on the iPhone before a session. The watch keeps them until she changes them.
+    /// The Figma sample names are the starting values.
+    var motherName = UserDefaults.standard.string(forKey: "motherName") ?? "Malika" {
+        didSet { UserDefaults.standard.set(motherName, forKey: "motherName") }
+    }
+    var babyName = UserDefaults.standard.string(forKey: "babyName") ?? "Jeffrey" {
+        didSet { UserDefaults.standard.set(babyName, forKey: "babyName") }
+    }
+    /// Her holding goal, in minutes.
+    static let goalMinutes = 120
+
+    var phase: Phase = .welcome
     var heartRate: Double?
     var statusMessage = "Not started"
+    /// Seconds she has held her baby this session, not counting pauses.
+    var heldSeconds = 0
+    var goalProgress: Double { Double(heldSeconds) / Double(Self.goalMinutes * 60) }
+    var goalReached: Bool { goalProgress >= 1 }
     /// True while an alert is waiting for the mother to turn her wrist.
     var isAlerting = false
 
@@ -27,6 +52,7 @@ final class WorkoutManager: NSObject {
     private var movementCount = 0
     private var sliceTask: Task<Void, Never>?
     private var alertTask: Task<Void, Never>?
+    private var holdingClock: Task<Void, Never>?
 
     /// One log row every 5 seconds, matching the alert rule spec.
     private let sliceSeconds: TimeInterval = 5
@@ -41,9 +67,18 @@ final class WorkoutManager: NSObject {
         }
     }
 
+    /// Asks for Health access as soon as the app opens, so the nurse's Start works without a prompt.
+    func appeared() async {
+        try? await healthStore.requestAuthorization(
+            toShare: [HKObjectType.workoutType()],
+            read: [HKQuantityType(.heartRate)]
+        )
+    }
+
     // MARK: Session
 
     func start() async {
+        guard phase == .welcome || phase == .waiting else { return }
         do {
             try await healthStore.requestAuthorization(
                 toShare: [HKObjectType.workoutType()],
@@ -71,10 +106,12 @@ final class WorkoutManager: NSObject {
             session.startActivity(with: startDate)
             try await builder.beginCollection(at: startDate)
 
-            state = .running
+            phase = .holding
+            heldSeconds = 0
             statusMessage = "Recording"
             startMotion()
             startSliceTimer()
+            startHoldingClock()
             send(event: "session started")
         } catch {
             statusMessage = "Could not start: \(error.localizedDescription)"
@@ -84,6 +121,8 @@ final class WorkoutManager: NSObject {
     func end() async {
         sliceTask?.cancel()
         sliceTask = nil
+        holdingClock?.cancel()
+        holdingClock = nil
         stopAlert()
         motion.stopDeviceMotionUpdates()
         session?.end()
@@ -93,8 +132,35 @@ final class WorkoutManager: NSObject {
         // Spike sits are tests, so they are not saved to the Health app.
         builder?.discardWorkout()
         send(event: "session ended")
-        state = .ended
+        phase = .waiting
         statusMessage = "Ended"
+    }
+
+    // MARK: Holding time
+
+    /// Counts held time once a second, except while waiting for the nurse.
+    private func startHoldingClock() {
+        holdingClock?.cancel()
+        holdingClock = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, let self else { return }
+                if self.phase == .holding { self.heldSeconds += 1 }
+            }
+        }
+    }
+
+    /// She tapped Pause Holding. Holding time stops until her nurse resumes it from the iPhone.
+    func pauseHolding() {
+        guard phase == .holding else { return }
+        phase = .waitingForNurse
+        send(event: "holding paused")
+    }
+
+    fileprivate func resumeHolding() {
+        guard phase == .waitingForNurse else { return }
+        phase = .holding
+        send(event: "holding resumed")
     }
 
     // MARK: Movement
@@ -222,10 +288,16 @@ final class WorkoutManager: NSObject {
         isAlerting = false
     }
 
+    /// The nurse stopped the vibration from the iPhone, so she is on her way.
+    /// Holding time pauses and the watch shows Wait for Nurse until she resumes it.
     fileprivate func nurseStoppedAlert() {
         guard isAlerting else { return }
         stopAlert()
         send(event: "vibration stopped from iPhone")
+        if phase == .holding {
+            phase = .waitingForNurse
+            send(event: "holding paused")
+        }
     }
 }
 
@@ -269,12 +341,49 @@ extension WorkoutManager: WCSessionDelegate {
                              activationDidCompleteWith activationState: WCSessionActivationState,
                              error: Error?) {}
 
+    /// The iPhone sends names both as a message and as application context,
+    /// so the watch gets them even if its app was closed when the nurse tapped Send.
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        guard let names = Self.names(from: applicationContext) else { return }
+        Task { @MainActor in self.apply(names) }
+    }
+
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        if let names = Self.names(from: message) {
+            Task { @MainActor in self.apply(names) }
+            return
+        }
+        if message["start"] as? Bool == true {
+            Task { @MainActor in await self.start() }
+            return
+        }
+        if message["resume"] as? Bool == true {
+            Task { @MainActor in self.resumeHolding() }
+            return
+        }
         if message["stopHaptic"] as? Bool == true {
             Task { @MainActor in self.nurseStoppedAlert() }
             return
         }
         guard message["alert"] as? Bool == true else { return }
         Task { @MainActor in self.startAlert() }
+    }
+}
+
+// MARK: - Names from the iPhone
+
+extension WorkoutManager {
+    nonisolated static func names(from message: [String: Any]) -> (mother: String, baby: String)? {
+        guard let mother = message["motherName"] as? String,
+              let baby = message["babyName"] as? String else { return nil }
+        return (mother, baby)
+    }
+
+    func apply(_ names: (mother: String, baby: String)) {
+        let mother = names.mother.trimmingCharacters(in: .whitespacesAndNewlines)
+        let baby = names.baby.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !mother.isEmpty { motherName = mother }
+        if !baby.isEmpty { babyName = baby }
+        send(event: "names received")
     }
 }

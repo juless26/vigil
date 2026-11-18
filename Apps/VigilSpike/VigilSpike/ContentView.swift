@@ -13,6 +13,28 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: VigilLayout.Space.m) {
+                    SectionHeader("Tester")
+                    VStack(spacing: 0) {
+                        FormTextRow(label: "Mother", prompt: "Required", text: $store.motherName)
+                        Rectangle()
+                            .fill(VigilToken.List.separator)
+                            .frame(height: 0.5)
+                        FormTextRow(label: "Baby", prompt: "Required", text: $store.babyName)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: VigilLayout.Radius.tile))
+                    VigilButton("Send names to watch", style: .tinted) { store.sendNames() }
+                        .disabled(store.motherName.trimmingCharacters(in: .whitespaces).isEmpty
+                                  || store.babyName.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                    SectionHeader("Holding session")
+                    VigilButton("Start holding") { store.startHolding() }
+                    if store.holdingPaused {
+                        VigilButton("Resume holding") { store.resumeHolding() }
+                    }
+                    Text("Open Vigil on the watch first. It waits on the 2 Hour Goal screen.")
+                        .font(.footnote)
+                        .foregroundStyle(VigilColor.textSecondary)
+
                     SectionHeader("Live from the watch")
                     LazyVGrid(columns: columns, spacing: VigilLayout.Space.m) {
                         MetricTile(value: heartRateText, label: "Heart rate, bpm")
@@ -51,7 +73,7 @@ struct ContentView: View {
                 .padding(VigilLayout.Space.l)
             }
             .background(VigilToken.screenBackground)
-            .navigationTitle("Vigil spike")
+            .navigationTitle("Vigil")
             .toolbar {
                 ShareLink(item: store.fileURL) {
                     Label("Share log", systemImage: "square.and.arrow.up")

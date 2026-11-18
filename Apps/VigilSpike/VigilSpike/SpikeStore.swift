@@ -74,6 +74,49 @@ final class SpikeStore: NSObject {
         record(event: "alert requested")
     }
 
+    /// Names for this tester. The watch shows the mother's name on Welcome and the baby's on Goal Complete.
+    var motherName = UserDefaults.standard.string(forKey: "motherName") ?? "Malika" {
+        didSet { UserDefaults.standard.set(motherName, forKey: "motherName") }
+    }
+    var babyName = UserDefaults.standard.string(forKey: "babyName") ?? "Jeffrey" {
+        didSet { UserDefaults.standard.set(babyName, forKey: "babyName") }
+    }
+
+    /// Sends both names to the watch. Application context reaches the watch even if its app is closed.
+    func sendNames() {
+        let names: [String: Any] = ["motherName": motherName, "babyName": babyName]
+        do {
+            try WCSession.default.updateApplicationContext(names)
+        } catch {
+            record(event: "names not sent: \(error.localizedDescription)")
+            return
+        }
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(names, replyHandler: nil, errorHandler: nil)
+        }
+        record(event: "names sent")
+    }
+
+    /// True while holding is paused and the watch shows Wait for Nurse.
+    var holdingPaused = false
+
+    /// The nurse starts holding. The watch app must be open on the 2 Hour Goal screen.
+    func startHolding() { sendToWatch(["start": true], label: "start") }
+
+    /// The nurse arrived and resumes holding time.
+    func resumeHolding() { sendToWatch(["resume": true], label: "resume") }
+
+    private func sendToWatch(_ message: [String: Any], label: String) {
+        guard WCSession.default.isReachable else {
+            record(event: "\(label) not sent: watch not reachable")
+            return
+        }
+        WCSession.default.sendMessage(message, replyHandler: nil) { [weak self] _ in
+            Task { @MainActor in self?.record(event: "\(label) send failed") }
+        }
+        record(event: "\(label) requested")
+    }
+
     /// The nurse stops the watch vibrating from the iPhone.
     func stopWatchVibration() {
         guard WCSession.default.isReachable else {
@@ -91,6 +134,7 @@ final class SpikeStore: NSObject {
         var row = incoming
 
         if row.event == "session started" {
+            holdingPaused = false
             rule.startSession(at: row.time)
             sessionActive = true
             lastProcessedTime = nil
@@ -99,6 +143,11 @@ final class SpikeStore: NSObject {
         } else if row.event == "session ended" {
             rule.endSession()
             sessionActive = false
+            holdingPaused = false
+        } else if row.event == "holding paused" {
+            holdingPaused = true
+        } else if row.event == "holding resumed" {
+            holdingPaused = false
         } else if row.event == "mother responded" || row.event == "vibration stopped from iPhone" {
             rule.alertAnswered()
         }
@@ -117,6 +166,13 @@ final class SpikeStore: NSObject {
             return
         }
         lastProcessedTime = row.time
+
+        // While holding is paused the nurse is with her, so the rule doesn't alert.
+        if holdingPaused {
+            row.ruleState = "paused"
+            append(row)
+            return
+        }
 
         let out = rule.process(time: row.time, heartRate: row.heartRate,
                                sampleAge: row.sampleAge, movement: row.movement ?? 0)
@@ -154,7 +210,7 @@ final class SpikeStore: NSObject {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        return URL.documentsDirectory.appending(path: "vigil-spike-\(f.string(from: Date())).csv")
+        return URL.documentsDirectory.appending(path: "vigil-log-\(f.string(from: Date())).csv")
     }
 
     private func startFile() {
