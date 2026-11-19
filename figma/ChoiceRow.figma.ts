@@ -9,9 +9,13 @@ const selected = instance.getEnum('State', {
   'Selected': 'true',
   'Unselected': 'false',
 })
+const mark = instance.getEnum('Mark', {
+  'Radio': '.radio',
+  'Checkbox': '.checkbox',
+})
 
 export default {
-  example: figma.code`ChoiceRow("${label}", isSelected: ${selected}) {
+  example: figma.code`ChoiceRow("${label}", isSelected: ${selected}, mark: ${mark}) {
     // select this answer
 }`,
   imports: ['import VigilDesignSystem'],

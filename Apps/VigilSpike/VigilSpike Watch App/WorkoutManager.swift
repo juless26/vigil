@@ -50,6 +50,9 @@ final class WorkoutManager: NSObject {
 
     private let motion = CMMotionManager()
     private var movementCount = 0
+    /// The watch's own copy of this session's rows, so a sit is never lost
+    /// if the iPhone app is closed or the queue to the iPhone is cleared.
+    private var watchLogURL: URL?
     private var sliceTask: Task<Void, Never>?
     private var alertTask: Task<Void, Never>?
     private var holdingClock: Task<Void, Never>?
@@ -109,6 +112,7 @@ final class WorkoutManager: NSObject {
             phase = .holding
             heldSeconds = 0
             statusMessage = "Recording"
+            startWatchLog(at: startDate)
             startMotion()
             startSliceTimer()
             startHoldingClock()
@@ -132,6 +136,8 @@ final class WorkoutManager: NSObject {
         // Spike sits are tests, so they are not saved to the Health app.
         builder?.discardWorkout()
         send(event: "session ended")
+        sendWatchLogs(onlyCurrent: true)
+        watchLogURL = nil
         phase = .waiting
         statusMessage = "Ended"
     }
@@ -160,6 +166,13 @@ final class WorkoutManager: NSObject {
         guard phase == .holding else { return }
         phase = .waitingForNurse
         send(event: "mother asked for nurse")
+        send(event: "holding paused")
+    }
+
+    /// The nurse paused holding from the iPhone. No alert, because she is already there.
+    fileprivate func nursePausedHolding() {
+        guard phase == .holding else { return }
+        phase = .waitingForNurse
         send(event: "holding paused")
     }
 
@@ -245,7 +258,9 @@ final class WorkoutManager: NSObject {
     }
 
     /// Sends live when the iPhone is reachable. Otherwise queues the row so none are lost.
+    /// Every row is also written to the watch's own log first.
     private func send(_ row: [String: Any]) {
+        appendToWatchLog(row)
         let wc = WCSession.default
         guard wc.activationState == .activated else { return }
         if wc.isReachable {
@@ -255,6 +270,52 @@ final class WorkoutManager: NSObject {
         } else {
             wc.transferUserInfo(row.merging(["queued": true]) { $1 })
         }
+    }
+
+    // MARK: Watch log
+
+    private static let logStamp: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        return f
+    }()
+
+    private static let rowStamp: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f
+    }()
+
+    private func startWatchLog(at date: Date) {
+        let url = URL.documentsDirectory.appending(path: "watch-log-\(Self.logStamp.string(from: date)).csv")
+        try? "time,heart_rate_bpm,hr_sample_age_s,movement_count,event\n".write(to: url, atomically: true, encoding: .utf8)
+        watchLogURL = url
+    }
+
+    private func appendToWatchLog(_ row: [String: Any]) {
+        guard let url = watchLogURL, let handle = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? handle.close() }
+        let t = Date(timeIntervalSince1970: row["t"] as? Double ?? Date().timeIntervalSince1970)
+        let hr = (row["hr"] as? Double).map { String(Int($0.rounded())) } ?? ""
+        let age = (row["age"] as? Double).map { String(format: "%.1f", $0) } ?? ""
+        let move = (row["move"] as? Int).map(String.init) ?? ""
+        let event = (row["event"] as? String ?? "").replacingOccurrences(of: ",", with: ";")
+        let line = "\(Self.rowStamp.string(from: t)),\(hr),\(age),\(move),\(event)\n"
+        handle.seekToEndOfFile()
+        handle.write(Data(line.utf8))
+    }
+
+    /// Sends this watch's saved logs to the iPhone. Files wait in the system queue
+    /// until the iPhone can take them, and stay on the watch either way.
+    private func sendWatchLogs(onlyCurrent: Bool) {
+        let wc = WCSession.default
+        guard wc.activationState == .activated else { return }
+        let files = onlyCurrent ? [watchLogURL].compactMap { $0 }
+            : ((try? FileManager.default.contentsOfDirectory(at: URL.documentsDirectory, includingPropertiesForKeys: nil)) ?? [])
+                .filter { $0.lastPathComponent.hasPrefix("watch-log-") }
+        for url in files { wc.transferFile(url, metadata: ["watchLog": true]) }
     }
 
     // MARK: Haptics
@@ -371,8 +432,16 @@ extension WorkoutManager: WCSessionDelegate {
             }
             return
         }
+        if message["sendLogs"] as? Bool == true {
+            Task { @MainActor in self.sendWatchLogs(onlyCurrent: false) }
+            return
+        }
         if message["stop"] as? Bool == true {
             Task { @MainActor in await self.end() }
+            return
+        }
+        if message["pause"] as? Bool == true {
+            Task { @MainActor in self.nursePausedHolding() }
             return
         }
         if message["resume"] as? Bool == true {

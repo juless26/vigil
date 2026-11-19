@@ -1,149 +1,119 @@
 import SwiftUI
+import UIKit
 import VigilDesignSystem
 
+/// The nurse app: four tabs, plus the Check now, What you found and Session ended screens,
+/// which open over whatever tab the nurse is on.
 struct ContentView: View {
     @State private var store = SpikeStore()
 
-    private let columns = [
-        GridItem(.flexible(), spacing: VigilLayout.Space.m),
-        GridItem(.flexible(), spacing: VigilLayout.Space.m)
-    ]
-
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: VigilLayout.Space.m) {
-                    if let alert = store.nurseAlert {
-                        AlertCard(
-                            level: alert.level,
-                            title: alert.title,
-                            message: alert.message,
-                            time: alert.raisedAt.formatted(date: .omitted, time: .shortened),
-                            primary: primaryAction(for: alert),
-                            secondary: secondaryAction(for: alert))
-                    }
-
-                    SectionHeader("Tester")
-                    VStack(spacing: 0) {
-                        FormTextRow(label: "Mother", prompt: "Required", text: $store.motherName)
-                        Rectangle()
-                            .fill(VigilToken.List.separator)
-                            .frame(height: 0.5)
-                        FormTextRow(label: "Baby", prompt: "Required", text: $store.babyName)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: VigilLayout.Radius.tile))
-                    VigilButton("Send names to watch", style: .tinted) { store.sendNames() }
-                        .disabled(store.motherName.trimmingCharacters(in: .whitespaces).isEmpty
-                                  || store.babyName.trimmingCharacters(in: .whitespaces).isEmpty)
-
-                    SectionHeader("Holding session")
-                    VigilButton("Start holding") { store.startHolding() }
-                    if store.holdingPaused {
-                        VigilButton("Resume holding") { store.resumeHolding() }
-                    }
-                    if store.sessionActive {
-                        VigilButton("Stop holding", style: .tinted) { store.stopHolding() }
-                    }
-                    Text("Open Vigil on the watch first. It waits on the 2 Hour Goal screen.")
-                        .font(.footnote)
-                        .foregroundStyle(VigilColor.textSecondary)
-
-                    SectionHeader("Live from the watch")
-                    LazyVGrid(columns: columns, spacing: VigilLayout.Space.m) {
-                        MetricTile(value: heartRateText, label: "Heart rate, bpm")
-                        MetricTile(value: sampleAgeText, label: "Seconds since watch reading")
-                        MetricTile(value: movementText, label: "Movement this 5 seconds")
-                        MetricTile(value: "\(store.rows.count)", label: "Rows logged")
-                    }
-                    Text(store.watchReachable ? "Watch connected" : "Watch not reachable")
-                        .font(.footnote)
-                        .foregroundStyle(VigilColor.textSecondary)
-
-                    SectionHeader("Alert rule v0.1")
-                    LazyVGrid(columns: columns, spacing: VigilLayout.Space.m) {
-                        MetricTile(value: ruleStateText, label: "Rule state")
-                        MetricTile(value: baselineText, label: "Baseline, bpm")
-                    }
-                    Text("Vibrate the watch when the rule fires")
-                        .font(.footnote)
-                        .foregroundStyle(VigilColor.textSecondary)
-                    Picker("Vibrate the watch when the rule fires", selection: $store.vibrateOnAlert) {
-                        Text("Off").tag(false)
-                        Text("On").tag(true)
-                    }
-                    .pickerStyle(.segmented)
-
-                    SectionHeader("Test the alert")
-                    VigilButton("Start alert on watch", style: .tinted) { store.sendWatchAlert() }
-                    VigilButton("Stop watch vibration", style: .tinted) { store.stopWatchVibration() }
-                    VigilButton("Jump to goal", style: .tinted) { store.jumpToGoal() }
-
-                    SectionHeader("Log")
-                    Text(store.fileURL.lastPathComponent)
-                        .font(.footnote)
-                        .foregroundStyle(VigilColor.textSecondary)
-                    VigilButton("Start new log", style: .tinted) { store.newLog() }
-                }
-                .padding(VigilLayout.Space.l)
-            }
-            .background(VigilToken.screenBackground)
-            .navigationTitle("Vigil")
-            .toolbar {
-                ShareLink(item: store.fileURL) {
-                    Label("Share log", systemImage: "square.and.arrow.up")
-                }
+        TabView(selection: $store.selectedTab) {
+            PatientsView(store: store)
+                .tabItem { Label("Patients", systemImage: "person.2") }
+                .tag(0)
+            AlertsView(store: store)
+                .tabItem { Label("Alerts", systemImage: store.nurseAlert == nil ? "bell" : "bell.badge") }
+                .tag(1)
+            UnitView(store: store)
+                .tabItem { Label("Unit", systemImage: "chart.bar") }
+                .tag(2)
+            SettingsView(store: store)
+                .tabItem { Label("Settings", systemImage: "gear") }
+                .tag(3)
+        }
+        .fullScreenCover(isPresented: checkNowShown) {
+            CheckNowView(store: store)
+        }
+        // One sheet for both steps, so What you found can hand over to Session ended.
+        .sheet(item: flowSheet) { sheet in
+            switch sheet {
+            case .found: FoundView(store: store).interactiveDismissDisabled()
+            case .ended: SessionEndedView(store: store).interactiveDismissDisabled()
             }
         }
-    }
-
-    private var heartRateText: String {
-        store.latestReading?.heartRate.map { "\(Int($0.rounded()))" } ?? "--"
-    }
-
-    private var sampleAgeText: String {
-        store.latestReading?.sampleAge.map { String(format: "%.0f", $0) } ?? "--"
-    }
-
-    private var movementText: String {
-        store.rows.last { $0.movement != nil }?.movement.map(String.init) ?? "--"
-    }
-
-    /// Plain words for each rule state, so the screen never relies on a code name.
-    private var ruleStateText: String {
-        switch store.rule.state {
-        case .idle: "Not running"
-        case .baseline: "Setting baseline"
-        case .watching: "Watching"
-        case .drowsy: "Drowsy signs"
-        case .alerting: "Watch vibrating"
-        case .nurseAlerted: "Nurse alerted"
-        case .signalLost: "Signal lost"
+        .onChange(of: store.nurseAlert?.id) { _, _ in
+            guard let alert = store.nurseAlert else { return }
+            AccessibilityNotification.Announcement("\(alert.level == .checkNow ? "Check now" : "Check soon"). \(alert.title)").post()
+        }
+        // The unit phone stays awake while a session runs.
+        .onChange(of: store.data.live != nil, initial: true) { _, running in
+            UIApplication.shared.isIdleTimerDisabled = running
         }
     }
 
-    private var baselineText: String {
-        store.rule.baseline.map { "\(Int($0.rounded()))" } ?? "--"
+    private var checkNowShown: Binding<Bool> {
+        Binding(get: { store.nurseAlert?.level == .checkNow }, set: { _ in })
     }
 
-    // The nurse decides what happens next, so each card offers the two real choices.
-    private func primaryAction(for alert: NurseAlert) -> AlertCard.Action {
-        switch alert.kind {
-        case .vibration:
-            AlertCard.Action("Stop watch vibration") { store.stopWatchVibration(); store.dismissAlert() }
-        case .paused:
-            AlertCard.Action("Resume holding") { store.resumeHolding(); store.dismissAlert() }
-        case .goalReached:
-            AlertCard.Action("Stop holding") { store.stopHolding(); store.dismissAlert() }
+    private enum FlowSheet: String, Identifiable {
+        case found, ended
+        var id: String { rawValue }
+    }
+
+    private var flowSheet: Binding<FlowSheet?> {
+        Binding(get: {
+            if store.showFound { return .found }
+            if store.data.ended != nil, store.nurseAlert?.level != .checkNow { return .ended }
+            return nil
+        }, set: { _ in })
+    }
+}
+
+extension View {
+    /// The gray line under a large title, for example "Mother of Jeffrey · Bed 4". iOS 26 and later.
+    @ViewBuilder
+    func subtitle(_ text: String) -> some View {
+        if #available(iOS 26.0, *) {
+            navigationSubtitle(text)
+        } else {
+            self
         }
     }
 
-    private func secondaryAction(for alert: NurseAlert) -> AlertCard.Action {
-        switch alert.kind {
-        case .vibration, .goalReached:
-            AlertCard.Action("Dismiss") { store.dismissAlert() }
-        case .paused:
-            AlertCard.Action("Stop holding") { store.stopHolding(); store.dismissAlert() }
+    /// The screen's main button, pinned above the home indicator the way Figma shows it.
+    func bottomAction<B: View>(@ViewBuilder _ button: () -> B) -> some View {
+        let action = button()
+        return safeAreaInset(edge: .bottom) {
+            action
+                .padding(.horizontal, VigilLayout.Space.l)
+                .padding(.top, VigilLayout.Space.s)
+                .padding(.bottom, VigilLayout.Space.s)
+                .background(VigilToken.screenBackground)
         }
+    }
+}
+
+/// A hairline between rows in a grouped list.
+struct RowSeparator: View {
+    var body: some View {
+        Rectangle()
+            .fill(VigilToken.List.separator)
+            .frame(height: 0.5)
+            .padding(.leading, VigilLayout.Space.l)
+            .background(VigilToken.List.background)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Rows stacked into one rounded group, the way every list in Vigil looks.
+struct RowGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .clipShape(RoundedRectangle(cornerRadius: VigilLayout.Radius.tile))
+    }
+}
+
+/// A short line of help text under a section.
+struct Footnote: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+    var body: some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(VigilColor.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

@@ -87,6 +87,10 @@ public enum VigilToken {
     public enum Choice {
         public static let label = C.textPrimary
         public static let check = C.actionPrimary
+        /// The empty radio or checkbox before she picks.
+        public static let markOff = C.textTertiary
+        /// The check drawn inside a selected checkbox.
+        public static let markOn = C.textOnAction
     }
 
     public enum Progress {

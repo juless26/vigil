@@ -1,9 +1,11 @@
 import Foundation
 
-/// Settings from specs/alert-rule-v0.1.md. Every number here is a starting guess to tune.
+/// Settings from specs/alert-rule-v0.1.md, tuned after the November 19 sit (v0.2).
+/// Every number here is still a starting guess to tune.
 struct AlertRuleSettings {
     /// D: how far the 2-minute median heart rate must fall below baseline, in bpm.
-    var drop: Double = 4
+    /// Raised from 4 after an awake, still sit drifted 4 to 6 bpm below the first baseline.
+    var drop: Double = 6
     /// M: how many 5-second slices with movement are allowed in the 2-minute window.
     var maxMovingSlices = 3
     /// A slice counts as moving when the watch saw at least this many movement readings in it.
@@ -17,6 +19,10 @@ struct AlertRuleSettings {
     /// Baseline uses heart rate from minute 2 to minute 6 of the session.
     var baselineStartSeconds: TimeInterval = 60
     var baselineEndSeconds: TimeInterval = 360
+    /// A second baseline from minute 10 to minute 20, once she has settled, replaces the first.
+    /// The first baseline still covers minutes 6 to 20, so there is no gap.
+    var settledBaselineStartSeconds: TimeInterval = 600
+    var settledBaselineEndSeconds: TimeInterval = 1200
     /// No fresh heart-rate reading for this long means the signal is lost.
     var signalLostSeconds: TimeInterval = 30
 }
@@ -52,6 +58,8 @@ struct AlertRule {
 
     private var sessionStart: Date?
     private var baselineSamples: [Double] = []
+    private var settledSamples: [Double] = []
+    private var baselineSettled = false
     private var window: [(time: Date, heartRate: Double, moving: Bool)] = []
     private var drowsySince: Date?
     private var alertAt: Date?
@@ -111,6 +119,19 @@ struct AlertRule {
             }
             out.state = state
             return out
+        }
+        // Settled baseline: the median from minute 10 to minute 20 replaces the first one.
+        if !baselineSettled {
+            if elapsed >= settings.settledBaselineStartSeconds && elapsed < settings.settledBaselineEndSeconds {
+                settledSamples.append(heartRate)
+            }
+            if elapsed >= settings.settledBaselineEndSeconds {
+                baselineSettled = true
+                if let value = Self.median(settledSamples) {
+                    baseline = value
+                    out.events.append("baseline updated \(Int(value.rounded())) bpm")
+                }
+            }
         }
         guard let baseline else { return out }
 
