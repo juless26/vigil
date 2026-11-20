@@ -161,7 +161,7 @@ struct StartHoldingView: View {
                 VStack(alignment: .leading, spacing: VigilLayout.Space.m) {
                     SectionHeader("Before you start")
                     RowGroup {
-                        VitalRow(label: "1. Put the watch on \(mother.firstName)'s wrist", value: "", meta: "Snug, above the wrist bone")
+                        VitalRow(label: "1. Put the watch on her wrist", value: "", meta: "Snug, above the wrist bone")
                         RowSeparator()
                         VitalRow(label: "2. Open Vigil on the watch", value: "",
                                  meta: "It says Welcome \(mother.firstName)!")

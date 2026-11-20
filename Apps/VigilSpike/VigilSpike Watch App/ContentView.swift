@@ -95,7 +95,7 @@ struct ContentView: View {
                     .frame(minHeight: 40, maxHeight: .infinity)
                     .accessibilityHidden(true)
                 // Figma: the welcome sits right under the hearts.
-                message("Welcome \(manager.motherName)!", f)
+                message(manager.motherName.isEmpty ? "Welcome!" : "Welcome \(manager.motherName)!", f)
                 // One text style smaller than the welcome, so the greeting leads.
                 message("\(WorkoutManager.goalMinutes / 60) Hour Goal", f, style: .footnote)
                     .padding(.top, f.y(7))
@@ -170,7 +170,7 @@ struct ContentView: View {
                 goalHeader(icon: .star, f)
                 Spacer(minLength: f.y(8))
                 // At most two lines. At large text sizes it shrinks a little to fit, to 75% at most.
-                Text("Great job holding \(manager.babyName)!")
+                Text("Great job holding \(manager.babyName.isEmpty ? "your baby" : manager.babyName)!")
                     .font(.body)
                     .foregroundStyle(VigilColor.textPrimary)
                     .multilineTextAlignment(.center)

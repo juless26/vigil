@@ -119,11 +119,13 @@ final class SpikeStore: NSObject {
 
     var liveMother: Mother? { mother(data.live?.motherID) }
 
-    func addMother(name: String, baby: String, bed: String) {
-        data.mothers.append(Mother(name: name.trimmingCharacters(in: .whitespaces),
-                                   babyName: baby.trimmingCharacters(in: .whitespaces),
-                                   bed: bed.trimmingCharacters(in: .whitespaces)))
+    func addMother(name: String, baby: String, code: String, bed: String) {
+        let trim = { (s: String) in s.trimmingCharacters(in: .whitespaces) }
+        data.mothers.append(Mother(name: trim(name), babyName: trim(baby), code: trim(code), bed: trim(bed)))
     }
+
+    /// The first name of the mother holding now, for alert wording.
+    private var who: String { liveMother?.name ?? "the mother" }
 
     /// A mother who is holding now cannot be removed.
     func removeMother(_ mother: Mother) {
@@ -202,7 +204,8 @@ final class SpikeStore: NSObject {
         didSet { UserDefaults.standard.set(babyName, forKey: "babyName") }
     }
 
-    /// Puts this mother's names on the watch. Application context reaches the watch even if its app is closed.
+    /// Puts this mother's and baby's first names on the watch.
+    /// Application context reaches the watch even if its app is closed.
     func sendNames(for mother: Mother) {
         data.watchMotherID = mother.id
         motherName = mother.firstName
@@ -374,6 +377,8 @@ final class SpikeStore: NSObject {
         trackSession(row)
 
         if row.event == "session started" {
+            // The log carries her study code, never her name.
+            if let code = liveMother?.code, !code.isEmpty { record(event: "study code \(code)") }
             rule.startSession(at: row.time)
             sessionActive = true
             lastProcessedTime = nil
@@ -385,14 +390,14 @@ final class SpikeStore: NSObject {
         } else if row.event == "mother asked for nurse" {
             raise(NurseAlert(
                 level: .checkSoon,
-                title: "Pause pressed on \(motherName)'s watch",
+                title: "Pause pressed on \(who)'s watch",
                 message: "Holding time is paused. Resume or stop holding after you talk with her.",
                 raisedAt: row.receivedAt,
                 kind: .paused))
         } else if row.event == "goal reached" {
             raise(NurseAlert(
                 level: .checkSoon,
-                title: "\(motherName) reached her 2 hour goal",
+                title: "\(who) reached her 2 hour goal",
                 message: "Go relieve her when you can.",
                 raisedAt: row.receivedAt,
                 kind: .goalReached))
@@ -440,7 +445,7 @@ final class SpikeStore: NSObject {
             raise(NurseAlert(
                 level: .checkNow,
                 title: "No response to the watch alert",
-                message: "The watch vibrated for 30 seconds and \(motherName) has not turned her wrist.",
+                message: "The watch vibrated for 30 seconds and \(who) has not turned her wrist.",
                 raisedAt: Date()))
         }
     }
@@ -464,7 +469,7 @@ final class SpikeStore: NSObject {
         guard alertsOn else { return }
         raise(NurseAlert(
             level: .checkSoon,
-            title: "No signal from \(motherName)'s watch",
+            title: "No signal from \(who)'s watch",
             message: "The phone has not heard from the watch for 30 seconds. Check that it is on her wrist and Vigil is open.",
             raisedAt: Date(),
             kind: .signalLost))

@@ -55,17 +55,17 @@ struct PatientsView: View {
     }
 }
 
-/// New mother setup. Only names and bed are kept, on this phone.
+/// New mother setup. First names show on this phone and her watch; the logs carry only the study code.
 struct NewMotherView: View {
     let store: SpikeStore
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var baby = ""
+    @State private var code = ""
     @State private var bed = ""
 
     private var ready: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty
-            && !baby.trimmingCharacters(in: .whitespaces).isEmpty
+        [name, baby, code].allSatisfy { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     var body: some View {
@@ -74,20 +74,22 @@ struct NewMotherView: View {
                 VStack(alignment: .leading, spacing: VigilLayout.Space.m) {
                     SectionHeader("Mother and baby")
                     RowGroup {
-                        FormTextRow(label: "Mother", prompt: "Full name", text: $name)
+                        FormTextRow(label: "Mother", prompt: "First name", text: $name)
                         RowSeparator()
                         FormTextRow(label: "Baby", prompt: "First name", text: $baby)
                         RowSeparator()
+                        FormTextRow(label: "Study code", prompt: "For example V-01", text: $code)
+                        RowSeparator()
                         FormTextRow(label: "Bed", prompt: "Optional", text: $bed)
                     }
-                    Footnote("Names and bed stay on this phone.")
+                    Footnote("First names only. They show on this phone and her watch. The study's logs carry only the study code.")
                 }
                 .padding(VigilLayout.Space.l)
             }
             .background(VigilToken.screenBackground)
             .bottomAction {
                 VigilButton("Add mother") {
-                    store.addMother(name: name, baby: baby, bed: bed)
+                    store.addMother(name: name, baby: baby, code: code, bed: bed)
                     dismiss()
                 }
                 .disabled(!ready)

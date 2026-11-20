@@ -469,8 +469,9 @@ extension WorkoutManager {
     func apply(_ names: (mother: String, baby: String)) {
         let mother = names.mother.trimmingCharacters(in: .whitespacesAndNewlines)
         let baby = names.baby.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !mother.isEmpty { motherName = mother }
-        if !baby.isEmpty { babyName = baby }
+        // An empty name is allowed: the pilot sends none, and the screens then leave the name out.
+        motherName = mother
+        babyName = baby
         send(event: "names received")
     }
 }

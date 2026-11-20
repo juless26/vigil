@@ -1,18 +1,37 @@
 import Foundation
 
-/// One mother on the unit. Only her name, her baby's name and her bed are kept,
-/// because the Patients list shows on a shared unit phone.
+/// One mother in the pilot. The phone and her watch show first names only.
+/// The study code, such as "V-01", is what the research logs carry.
 struct Mother: Identifiable, Codable, Hashable {
     var id = UUID()
+    /// Her first name.
     var name: String
+    /// Her baby's first name, for the watch's goal screen.
     var babyName: String
+    /// Her study code.
+    var code: String = ""
     var bed: String
+
+    init(name: String, babyName: String, code: String, bed: String) {
+        self.name = name
+        self.babyName = babyName
+        self.code = code
+        self.bed = bed
+    }
+
+    /// Mothers saved before study codes existed still load, with an empty code.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        babyName = try c.decodeIfPresent(String.self, forKey: .babyName) ?? ""
+        code = try c.decodeIfPresent(String.self, forKey: .code) ?? ""
+        bed = try c.decodeIfPresent(String.self, forKey: .bed) ?? ""
+    }
 
     var firstName: String { name.split(separator: " ").first.map(String.init) ?? name }
 
-    var initials: String {
-        String(name.split(separator: " ").prefix(2).compactMap(\.first)).uppercased()
-    }
+    var initials: String { String(name.prefix(1)).uppercased() }
 
     /// "Bed 4", or empty when no bed was entered.
     var bedLabel: String {
@@ -21,13 +40,15 @@ struct Mother: Identifiable, Codable, Hashable {
         return trimmed.lowercased().hasPrefix("bed") ? trimmed : "Bed \(trimmed)"
     }
 
-    /// "Mother of Jeffrey · Bed 4"
+    /// "V-01 · Bed 4"
     var bedLine: String {
-        bedLabel.isEmpty ? "Mother of \(babyName)" : "Mother of \(babyName) · \(bedLabel)"
+        [code, bedLabel].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
-    /// "Malika Williams · Bed 4"
-    var nameLine: String { bedLabel.isEmpty ? name : "\(name) · \(bedLabel)" }
+    /// "Malika · V-01 · Bed 4"
+    var nameLine: String {
+        [name, code, bedLabel].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
 }
 
 /// What the nurse found when she answered a Check now alert.
